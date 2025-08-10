@@ -258,6 +258,10 @@ which also breaks the dawn css default
   gap: 1.5rem;
 }
 
+.gap-4 {
+  gap: 1rem;
+}
+
 .overflow-hidden {
   overflow: hidden;
 }
@@ -667,5 +671,9 @@ which also breaks the dawn css default
 @media (min-width: 1024px) {
   .lg\:gap-4 {
     gap: 1rem;
+  }
+
+  .lg\:gap-6 {
+    gap: 1.5rem;
   }
 }

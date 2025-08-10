@@ -19,7 +19,7 @@
 
     <!-- Desktop Products Slider -->
     <best-seller-carousel class="best-sellers_products-container max-md:hidden ">
-      <div class="best-sellers_product-slider flex gap-6 w-max relative lg:gap-4">
+      <div class="best-sellers_product-slider flex gap-4 w-max relative lg:gap-6">
         {% for product in products limit: 10 %}
           <div class="best-sellers_carousel-item">
             {%- render 'product-card', product: product -%}
