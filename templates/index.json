@@ -35,6 +35,7 @@
         "heading",
         "button"
       ],
+      "disabled": true,
       "settings": {
         "image_overlay_opacity": 40,
         "image_height": "large",
@@ -47,9 +48,22 @@
         "mobile_content_alignment": "center",
         "show_text_below": false
       }
+    },
+    "best_sellers_9DBkwV": {
+      "type": "best-sellers",
+      "name": "Best Sellers",
+      "settings": {
+        "title": "Best Sellers",
+        "product_list": [],
+        "shop_all_url": "shopify://collections",
+        "shop_all_text": "Shop All Best Sellers",
+        "average_rating": 5,
+        "rating_text": "127 reviews"
+      }
     }
   },
   "order": [
-    "image_banner"
+    "image_banner",
+    "best_sellers_9DBkwV"
   ]
 }
