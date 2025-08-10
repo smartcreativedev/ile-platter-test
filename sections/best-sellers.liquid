@@ -1,0 +1,292 @@
+
+{%- liquid
+  assign products = section.settings.product_list
+  if products == blank
+    assign products = collections['best-sellers'].products
+  endif
+-%}
+
+<div class="best-sellers_section w-full pt-12 pb-12 overflow-hidden">
+  <div class="best-sellers_container page-width">
+    <div class="best-sellers_desktop-header flex justify-between items-center mb-9">
+      <h2 class="best-sellers_section-title font-black text-[40px] leading-tight m-0 max-md:text-center max-md:w-full max-md:text-[28px]">{{ section.settings.title | default: 'Best Sellers' }}</h2>
+      {% if section.settings.shop_all_url != blank %}
+        <a href="{{ section.settings.shop_all_url }}" class="best-sellers_shop-all-btn text-[#5C553A] font-poppins font-semibold text-sm leading-tight no-underline md:black max-md:hidden ">
+          {{ section.settings.shop_all_text | default: 'Shop All' }} →
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- Desktop Products Slider -->
+    <best-seller-carousel class="best-sellers_products-container max-md:hidden ">
+      <div class="best-sellers_product-slider flex gap-6 w-max relative lg:gap-4">
+        {% for product in products limit: 10 %}
+          <div class="best-sellers_carousel-item">
+            {%- render 'product-card', product: product -%}
+          </div>
+        {% endfor %}
+      </div>
+      
+      <!-- Custom Scroll Thumb -->
+      <div class="best-sellers_scroll-thumb-container h-1 !mt-10">
+        <div class="best-sellers_scroll-thumb relative bg-gray-300 h-full">
+          <div class="best-sellers_thumb-progress h-full bg-gray-900 !block absolute transform -translate-y-1/2 left-0 top-1/2 rounded-md hover:h-1.5 hover:cursor-pointer"></div>
+        </div>
+      </div>
+    </best-seller-carousel>
+
+    <!-- Mobile Products Grid -->
+    <div class="best-sellers_mobile-products hidden max-md:grid grid-cols-2 gap-3">
+      {% for product in products limit: 4 %}
+        {%- render 'product-card', product: product -%}
+      {% endfor %}
+    </div>
+    
+    <best-seller-show-more class="best-sellers_show-more md:hidden">
+      <!-- Hidden Products for Mobile -->
+      <div class="best-sellers_hidden-products h-0 grid overflow-hidden grid-cols-2 gap-3 mb-4 transition-all duration-600 ease-in-out opacity-0">
+        {% for product in products limit: 6 offset: 4 %}
+          {%- render 'product-card', product: product -%}
+        {% endfor %}
+      </div>
+      <!-- Show More Button -->
+      <div class="best-sellers_show-more-container text-center mt-4">
+        <button class="best-sellers_show-more-btn font-poppins font-semibold text-[16px] leading-tight text-center w-full py-4 px-4 border-none bg-black text-white rounded-full transition-all duration-300 ease-in-out cursor-pointer hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0">
+          Show More
+        </button>
+      </div>
+    </best-seller-show-more>
+  </div>
+</div>
+
+<script>
+  if(!customElements.get('best-seller-carousel')){
+    customElements.define('best-seller-carousel', class BestSellerCarousel extends HTMLElement {
+      constructor() {
+        super();
+        this.slideItems = this.querySelectorAll('.best-sellers_carousel-item');
+        this.productSlider = this.querySelector('.best-sellers_product-slider');
+        this.contentWidth = this.offsetWidth;
+        this.scrollThumb = this.querySelector('.best-sellers_scroll-thumb');
+        this.thumbProgress = this.querySelector('.best-sellers_thumb-progress');
+        this.scrollPercentage = 0;
+        this.thumbContainer = this.querySelector('.best-sellers_scroll-thumb-container');
+        this.isDragging = false;
+        this.startX = 0;
+        this.startLeft = 0;
+        this.init();
+      }
+      
+      init() {
+        this.applySlideItemsWidth();
+        this.applyThumbProgressWidth();
+        this.setupEventListeners();  
+        window.addEventListener('resize', this.resizeHandler.bind(this));
+      }
+      
+      resizeHandler() {
+        this.contentWidth = this.offsetWidth;
+        this.applySlideItemsWidth();
+        this.applyThumbProgressWidth();
+        // Reset content width and initialize slider
+        this.thumbProgress.style.left = "0";
+        this.thumbProgress.style.right = "unset";
+        this.productSlider.style.right = "0";
+      }
+      
+      applyThumbProgressWidth() {
+        this.scrollPercentage = this.contentWidth / this.productSlider.scrollWidth;
+        this.thumbProgress.style.width = (this.scrollPercentage * 100) + '%'; 
+      }
+
+      setupEventListeners() {
+        // Thumb drag functionality
+        this.thumbProgress.addEventListener('mousedown', (e) => {
+          this.isDragging = true;
+          this.startX = e.clientX;
+          this.startLeft = this.thumbProgress.offsetLeft;
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+          if (!this.isDragging) return;
+          const deltaX = e.clientX - this.startX;
+          const newLeft = this.startLeft + deltaX;
+
+          if(newLeft + this.thumbProgress.offsetWidth > this.thumbContainer.offsetWidth){
+            this.thumbProgress.style.left = "unset";
+            this.thumbProgress.style.right = "0";
+            this.productSlider.style.right = ((this.thumbContainer.offsetWidth - this.thumbProgress.offsetWidth) / this.scrollPercentage) + 'px';
+            return;
+          }
+          if(newLeft < 0){
+            this.thumbProgress.style.left = "0";
+            this.thumbProgress.style.right = "unset";
+            this.productSlider.style.right = "0";
+            return;
+          }
+          
+          this.thumbProgress.style.left = newLeft + 'px';
+          this.thumbProgress.style.right = "unset";
+          this.productSlider.style.left = 'unset';
+          this.productSlider.style.right = (newLeft / this.scrollPercentage) + 'px';
+        });
+        
+        document.addEventListener('mouseup', () => {
+          this.isDragging = false;
+        }); 
+        document.addEventListener('mouseleave', () => {
+          this.isDragging = false;
+        });
+        
+        // Prevent default drag behavior on thumb
+        this.thumbProgress.addEventListener('dragstart', (e) => e.preventDefault());
+      }
+      
+      applySlideItemsWidth() {
+        const containerWidth = this.offsetWidth;
+        let slideWidth = containerWidth * 0.22; // 22% width for each slide
+        if(window.innerWidth < 1024){
+          slideWidth = containerWidth * 0.28;
+        }
+        this.slideItems.forEach(item => {
+          item.style.width = slideWidth + 'px';
+          item.style.flexShrink = '0';
+        });
+      }
+    });
+  }
+
+  if(!customElements.get('best-seller-show-more')){
+    customElements.define('best-seller-show-more', class BestSellerShowMore extends HTMLElement {
+      constructor() {
+        super();
+        this.hiddenProducts = this.querySelector('.best-sellers_hidden-products');
+        this.showMoreBtn = this.querySelector('.best-sellers_show-more-btn');
+        this.isExpanded = false;
+        this.init();
+      }
+      
+      init() {
+        this.setupEventListeners();
+        this.calculateInitialHeight();
+      }
+      
+      calculateInitialHeight() {
+        // Store the natural height of hidden products
+        this.naturalHeight = this.hiddenProducts.scrollHeight;
+        this.hiddenProducts.style.height = '0';
+        this.hiddenProducts.style.transition = 'height 0.6s ease, opacity 0.6s ease';
+      }
+      
+      setupEventListeners() {
+        this.showMoreBtn.addEventListener('click', () => {
+          this.toggleProducts();
+        });
+      }
+      
+      toggleProducts() {
+        if (this.isExpanded) {
+          this.collapseProducts();
+        } else {
+          this.expandProducts();
+        }
+      }
+      
+      expandProducts() {
+        this.hiddenProducts.style.height = this.naturalHeight + 'px';
+        this.hiddenProducts.style.opacity = '1';
+        this.showMoreBtn.textContent = 'Show Less';
+        this.isExpanded = true;
+        
+        // Add show class for grid display
+        setTimeout(() => {
+          this.hiddenProducts.classList.add('show');
+        }, 600);
+      }
+      
+      collapseProducts() {
+        this.hiddenProducts.style.height = '0';
+        this.hiddenProducts.style.opacity = '0';
+        this.showMoreBtn.textContent = 'Show More';
+        this.isExpanded = false;
+        
+        // Remove show class
+        this.hiddenProducts.classList.remove('show');
+      }
+    });
+  }
+
+  // Intersection Observer for product card animations
+  document.addEventListener('DOMContentLoaded', function() {
+    const productCards = document.querySelectorAll('.best-sellers_product-card');
+    
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const cardObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('opacity-100', 'translate-y-0');
+          cardObserver.unobserve(entry.target); 
+        }
+      });
+    }, observerOptions);
+    
+    productCards.forEach(card => {
+      cardObserver.observe(card);
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Best Sellers",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Best Sellers"
+    },
+    {
+      "type": "product_list",
+      "id": "product_list",
+      "label": "Products",
+      "info": "Select products to display. If none selected, will show all products."
+    },
+    {
+      "type": "url",
+      "id": "shop_all_url",
+      "label": "Shop All URL"
+    },
+    {
+      "type": "text",
+      "id": "shop_all_text",
+      "label": "Shop All Button Text",
+      "default": "Shop All"
+    },
+    {
+      "type": "range",
+      "id": "average_rating",
+      "label": "Average Rating",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "text",
+      "id": "rating_text",
+      "label": "Rating Text",
+      "default": "127 reviews"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Best Sellers"
+    }
+  ]
+}
+{% endschema %}
